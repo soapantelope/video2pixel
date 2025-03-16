@@ -131,10 +131,10 @@ def train(train = False):
 
     # load the model
     
-    discriminator_scenery.load_state_dict(torch.load("discriminator_scenery.pth"))
-    discriminator_pixel.load_state_dict(torch.load("discriminator_pixel.pth"))
-    generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
-    generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
+    # discriminator_scenery.load_state_dict(torch.load("discriminator_scenery.pth"))
+    # discriminator_pixel.load_state_dict(torch.load("discriminator_pixel.pth"))
+    # generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
+    # generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
 
     validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
 
