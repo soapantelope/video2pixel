@@ -100,7 +100,7 @@ def train():
 
     mse_loss = nn.MSELoss()
     l1_loss = nn.L1Loss()
-    scaler = torch.amp.GradScaler()
+    scaler = torch.cuda.amp.GradScaler()
 
     discriminator_scenery = Discriminator().to(device)
     discriminator_pixel = Discriminator().to(device)
