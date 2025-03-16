@@ -90,7 +90,7 @@ def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, ge
     torch.save(generator_scenery.state_dict(), "generator_scenery.pth")
     torch.save(generator_pixel.state_dict(), "generator_pixel.pth")
 
-def validate(generator_scenery, generator_pixel):
+def validate(generator_scenery, generator_pixel, epoch):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
 
@@ -104,10 +104,10 @@ def validate(generator_scenery, generator_pixel):
         fake_scenery = generator_scenery(pixel)
         fake_pixel = generator_pixel(scenery)
 
-        torchvision.utils.save_image(scenery, f"scenery_{i}.png")
-        torchvision.utils.save_image(pixel, f"pixel_{i}.png")
-        torchvision.utils.save_image(fake_scenery, f"fake_scenery_{i}.png")
-        torchvision.utils.save_image(fake_pixel, f"fake_pixel_{i}.png")
+        torchvision.utils.save_image(scenery, f"epoch_{epoch}_scenery_{i}.png")
+        torchvision.utils.save_image(pixel, f"epoch_{epoch}_pixel_{i}.png")
+        torchvision.utils.save_image(fake_scenery, f"epoch_{epoch}_fake_scenery_{i}.png")
+        torchvision.utils.save_image(fake_pixel, f"epoch_{epoch}_fake_pixel_{i}.png")
 
 def train(train = True):
 
@@ -164,15 +164,15 @@ def train(train = True):
                 print("Early stopping")
                 break
 
-            if epoch % 5 == 0:
+            if epoch % 2 == 0:
                 # save the model
                 print("Saving the model")
                 save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
                 # save some generated images
-                validate(generator_scenery, generator_pixel)
+                validate(epoch, generator_scenery, generator_pixel)
                
         # save the model
-        save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
+        save_model(1000, discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
 
     # load the model
     
