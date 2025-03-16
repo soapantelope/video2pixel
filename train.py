@@ -90,12 +90,22 @@ def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, ge
     torch.save(generator_scenery.state_dict(), "generator_scenery.pth")
     torch.save(generator_pixel.state_dict(), "generator_pixel.pth")
 
-def de_normalize(tensors):
-    for t in tensors:
-        t.mul_(torch.tensor([0.5, 0.5, 0.5], device=t.device).view(3, 1, 1)).add_(
-            torch.tensor([0.5, 0.5, 0.5], device=t.device).view(3, 1, 1)
-        )
-    return tensors
+def denormalize(tensor, mean, std):
+    """
+    Denormalizes a tensor image.
+
+    Args:
+        tensor (torch.Tensor): Normalized tensor of shape (C, H, W).
+        mean (list): List of mean values for each channel.
+        std (list): List of std values for each channel.
+
+    Returns:
+        torch.Tensor: Denormalized tensor of shape (C, H, W).
+    """
+    mean = torch.tensor(mean).to(tensor.device).view(3, 1, 1)
+    std = torch.tensor(std).to(tensor.device).view(3, 1, 1)
+    tensor = tensor * std + mean
+    return tensor
 
 def validate(generator_scenery, generator_pixel, transform, epoch):
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -112,10 +122,10 @@ def validate(generator_scenery, generator_pixel, transform, epoch):
         fake_scenery = generator_scenery(pixel)
         fake_pixel = generator_pixel(scenery)
 
-        scenery = de_normalize(scenery)
-        pixel = de_normalize(pixel)
-        fake_scenery = de_normalize(fake_scenery)
-        fake_pixel = de_normalize(fake_pixel)
+        scenery = denormalize(scenery, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        pixel = denormalize(pixel, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        fake_scenery = denormalize(fake_scenery, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        fake_pixel = denormalize(fake_pixel, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 
         torchvision.utils.save_image(scenery, f"epoch_{epoch}_scenery_{i}.png")
         torchvision.utils.save_image(pixel, f"epoch_{epoch}_pixel_{i}.png")
