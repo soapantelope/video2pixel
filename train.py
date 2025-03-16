@@ -90,11 +90,19 @@ def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, ge
     torch.save(generator_scenery.state_dict(), "generator_scenery.pth")
     torch.save(generator_pixel.state_dict(), "generator_pixel.pth")
 
+def de_normalize(tensors):
+    for t in tensors:
+        t.mul_(torch.tensor([0.5, 0.5, 0.5], device=t.device).view(3, 1, 1)).add_(
+            torch.tensor([0.5, 0.5, 0.5], device=t.device).view(3, 1, 1)
+        )
+    return tensors
+
 def validate(generator_scenery, generator_pixel, transform, epoch):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
 
     # pick 3 random images from the validation set and save the generated images
+    # make sure to de-normalize the images before saving
     indices = torch.randint(0, len(validation_dataset), (3,))
     for i in indices:
         scenery, pixel = validation_dataset[i]
@@ -103,6 +111,11 @@ def validate(generator_scenery, generator_pixel, transform, epoch):
 
         fake_scenery = generator_scenery(pixel)
         fake_pixel = generator_pixel(scenery)
+
+        scenery = de_normalize(scenery)
+        pixel = de_normalize(pixel)
+        fake_scenery = de_normalize(fake_scenery)
+        fake_pixel = de_normalize(fake_pixel)
 
         torchvision.utils.save_image(scenery, f"epoch_{epoch}_scenery_{i}.png")
         torchvision.utils.save_image(pixel, f"epoch_{epoch}_pixel_{i}.png")
@@ -113,7 +126,7 @@ def train():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # hyperparameters
-    num_epochs = 50
+    num_epochs = 10
     lambda_cycle = 10
     learning_rate = 1e-5
     batch_size = 1
@@ -133,7 +146,7 @@ def train():
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
-        # transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     ])
 
     dataset = PixelSceneryDataset("data/scenery", "data/pixel", transform=transform)
