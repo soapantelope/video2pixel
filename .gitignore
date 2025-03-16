@@ -2,6 +2,3 @@
 data/*
 venv/*
 
-# ignore zip files
-*.zip
-
