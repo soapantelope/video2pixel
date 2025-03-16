@@ -107,13 +107,13 @@ def denormalize(tensor, mean, std):
     tensor = tensor * std + mean
     return tensor
 
-def validate(generator_scenery, generator_pixel, transform, epoch):
+def validate(generator_scenery, generator_pixel, transform, epoch, num_images=3):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
 
     # pick 3 random images from the validation set and save the generated images
     # make sure to de-normalize the images before saving
-    indices = torch.randint(0, len(validation_dataset), (3,))
+    indices = torch.randint(0, len(validation_dataset), (num_images,))
     for i in indices:
         scenery, pixel = validation_dataset[i]
         scenery = scenery.unsqueeze(0).to(device)
@@ -136,7 +136,7 @@ def train():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # hyperparameters
-    num_epochs = 10
+    num_epochs = 100
     lambda_cycle = 10
     learning_rate = 1e-5
     batch_size = 1
@@ -154,7 +154,7 @@ def train():
     optimizer_generator = optim.Adam(list(generator_scenery.parameters()) + list(generator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
 
     transform = transforms.Compose([
-        transforms.Resize((256, 256)),
+        transforms.Resize((250, 250)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
     ])
@@ -190,7 +190,7 @@ def train():
             print("Saving the model")
             save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
             # save some generated images
-            validate(generator_scenery, generator_pixel, transform, epoch)
+            validate(generator_scenery, generator_pixel, transform, epoch, 3)
                
     # save the model
     save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
@@ -202,7 +202,7 @@ def train():
     # generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
     # generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
 
-    validate(generator_scenery, generator_pixel, transform, num_epochs)
+    validate(generator_scenery, generator_pixel, transform, num_epochs, 10)
 
 if __name__ == "__main__":
     train()
