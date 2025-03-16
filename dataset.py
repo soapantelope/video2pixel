@@ -8,7 +8,7 @@ import os
 import glob
 
 class PixelSceneryDataset(Dataset):
-    def __init__(self, root_pixel, root_scenery, transform=None):
+    def __init__(self, root_scenery, root_pixel, transform=None):
         self.root_pixel = root_pixel
         self.root_scenery = root_scenery
         self.transform = transform

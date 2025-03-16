@@ -89,44 +89,52 @@ def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, ge
     torch.save(generator_scenery.state_dict(), "generator_scenery.pth")
     torch.save(generator_pixel.state_dict(), "generator_pixel.pth")
 
-def train():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+def train(train = False):
+    if train:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # hyperparameters
-    num_epochs = 10
-    lambda_cycle = 5
-    learning_rate = 1e-4
-    batch_size = 1
+        # hyperparameters
+        num_epochs = 10
+        lambda_cycle = 5
+        learning_rate = 1e-4
+        batch_size = 1
 
-    mse_loss = nn.MSELoss()
-    l1_loss = nn.L1Loss()
-    scaler = torch.cuda.amp.GradScaler()
+        mse_loss = nn.MSELoss()
+        l1_loss = nn.L1Loss()
+        scaler = torch.cuda.amp.GradScaler()
 
-    discriminator_scenery = Discriminator().to(device)
-    discriminator_pixel = Discriminator().to(device)
-    generator_scenery = Generator().to(device)
-    generator_pixel = Generator().to(device)
+        discriminator_scenery = Discriminator().to(device)
+        discriminator_pixel = Discriminator().to(device)
+        generator_scenery = Generator().to(device)
+        generator_pixel = Generator().to(device)
 
-    optimizer_discriminator = optim.Adam(list(discriminator_scenery.parameters()) + list(discriminator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
-    optimizer_generator = optim.Adam(list(generator_scenery.parameters()) + list(generator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
+        optimizer_discriminator = optim.Adam(list(discriminator_scenery.parameters()) + list(discriminator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
+        optimizer_generator = optim.Adam(list(generator_scenery.parameters()) + list(generator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
 
-    transform = transforms.Compose([
-        transforms.Resize((300, 300)),
-        transforms.ToTensor(),
-    ])
+        transform = transforms.Compose([
+            transforms.Resize((300, 300)),
+            transforms.ToTensor(),
+        ])
 
-    dataset = PixelSceneryDataset("data/scenery", "data/pixel", transform=transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    
-    for epoch in range(num_epochs):
-        print(f"Epoch {epoch + 1}/{num_epochs}")
-        train_one_epoch(discriminator_scenery, discriminator_pixel, 
-                        generator_scenery, generator_pixel, dataloader,
-                        optimizer_discriminator, optimizer_generator, 
-                        lambda_cycle, mse_loss, l1_loss, scaler)
+        dataset = PixelSceneryDataset("data/scenery", "data/pixel", transform=transform)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         
-    # save the model
-    save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
+        for epoch in range(num_epochs):
+            print(f"Epoch {epoch + 1}/{num_epochs}")
+            train_one_epoch(discriminator_scenery, discriminator_pixel, 
+                            generator_scenery, generator_pixel, dataloader,
+                            optimizer_discriminator, optimizer_generator, 
+                            lambda_cycle, mse_loss, l1_loss, scaler)
+            
+        # save the model
+        save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
+
+    # load the model
+    
+    discriminator_scenery.load_state_dict(torch.load("discriminator_scenery.pth"))
+    discriminator_pixel.load_state_dict(torch.load("discriminator_pixel.pth"))
+    generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
+    generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
 
     validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
 
