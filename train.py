@@ -15,7 +15,7 @@ from dataset import PixelSceneryDataset
 def train_one_epoch(discriminator_scenery, discriminator_pixel, 
                     generator_scenery, generator_pixel, dataloader, 
                     optimizer_discriminator, optimizer_generator,
-                    lambda_cycle, mse_loss, l1_loss):
+                    lambda_cycle, mse_loss, l1_loss, scaler):
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -49,9 +49,9 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
             average_discriminator_loss += total_discriminator_loss.item() / len(dataloader)
 
         optimizer_discriminator.zero_grad()
-        torch.amp.GradScaler('cuda').scale(total_discriminator_loss).backward()
-        torch.amp.GradScaler('cuda').step(optimizer_discriminator)
-        torch.amp.GradScaler('cuda').update()
+        scaler.scale(total_discriminator_loss).backward()
+        scaler.step(optimizer_discriminator)
+        scaler.update()
 
         # train the generators
         with torch.amp.autocast('cuda'):
@@ -77,9 +77,9 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
             average_generator_loss += total_generator_loss.item() / len(dataloader)
 
         optimizer_generator.zero_grad()
-        torch.amp.GradScaler('cuda').scale(total_generator_loss).backward()
-        torch.amp.GradScaler('cuda').step(optimizer_generator)
-        torch.amp.GradScaler('cuda').update()
+        scaler.scale(total_generator_loss).backward()
+        scaler.step(optimizer_generator)
+        scaler.update()
 
     print(f"Discriminator loss: {average_discriminator_loss}, Generator loss: {average_generator_loss}")
 
@@ -100,6 +100,7 @@ def train():
 
     mse_loss = nn.MSELoss()
     l1_loss = nn.L1Loss()
+    scaler = torch.amp.GradScaler()
 
     discriminator_scenery = Discriminator().to(device)
     discriminator_pixel = Discriminator().to(device)
@@ -121,7 +122,7 @@ def train():
         train_one_epoch(discriminator_scenery, discriminator_pixel, 
                         generator_scenery, generator_pixel, dataloader,
                         optimizer_discriminator, optimizer_generator, 
-                        lambda_cycle, mse_loss, l1_loss)
+                        lambda_cycle, mse_loss, l1_loss, scaler)
         
     # save the model
     save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
