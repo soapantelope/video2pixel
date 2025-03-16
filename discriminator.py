@@ -16,7 +16,7 @@ class ConvBlock(nn.Module):
         return self.conv(x)
 
 class Discriminator(nn.Module):
-    def __init__(self, in_channels=3, features=[64, 128, 256]):
+    def __init__(self, in_channels=3, features=[64, 128, 256, 512]):
         super().__init__()
 
         # Initial layer (no InstanceNorm)
