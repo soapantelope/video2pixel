@@ -49,9 +49,9 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
             average_discriminator_loss += total_discriminator_loss.item() / len(dataloader)
 
         optimizer_discriminator.zero_grad()
-        torch.cuda.amp.GradScaler().scale(total_discriminator_loss).backward()
-        torch.cuda.amp.GradScaler().step(optimizer_discriminator)
-        torch.cuda.amp.GradScaler().update()
+        torch.amp.GradScaler('cuda').scale(total_discriminator_loss).backward()
+        torch.amp.GradScaler('cuda').step(optimizer_discriminator)
+        torch.amp.GradScaler('cuda').update()
 
         # train the generators
         with torch.amp.autocast('cuda'):
@@ -77,9 +77,9 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
             average_generator_loss += total_generator_loss.item() / len(dataloader)
 
         optimizer_generator.zero_grad()
-        torch.cuda.amp.GradScaler().scale(total_generator_loss).backward()
-        torch.cuda.amp.GradScaler().step(optimizer_generator)
-        torch.cuda.amp.GradScaler().update()
+        torch.amp.GradScaler('cuda').scale(total_generator_loss).backward()
+        torch.amp.GradScaler('cuda').step(optimizer_generator)
+        torch.amp.GradScaler('cuda').update()
 
     print(f"Discriminator loss: {average_discriminator_loss}, Generator loss: {average_generator_loss}")
 
