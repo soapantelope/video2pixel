@@ -136,7 +136,7 @@ def train(train = True):
 
         transform = transforms.Compose([
             albumentations.Resize(250, 250),
-            albumentations.normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], max_pixel_value=255),
+            albumentations.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], max_pixel_value=255),
             ToTensorV2()
         ])
 
