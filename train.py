@@ -90,7 +90,7 @@ def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, ge
     torch.save(generator_scenery.state_dict(), "generator_scenery.pth")
     torch.save(generator_pixel.state_dict(), "generator_pixel.pth")
 
-def validate(generator_scenery, generator_pixel, epoch):
+def validate(generator_scenery, generator_pixel, transform, epoch):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
 
@@ -169,10 +169,10 @@ def train(train = True):
                 print("Saving the model")
                 save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
                 # save some generated images
-                validate(epoch, generator_scenery, generator_pixel)
+                validate(generator_scenery, generator_pixel, transform, epoch)
                
         # save the model
-        save_model(1000, discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
+        save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
 
     # load the model
     
@@ -181,7 +181,7 @@ def train(train = True):
     # generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
     # generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
 
-    validate(generator_scenery, generator_pixel)
+    validate(generator_scenery, generator_pixel, transform, num_epochs)
 
 if __name__ == "__main__":
     train()
