@@ -114,8 +114,8 @@ def train(train = True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # hyperparameters
-        num_epochs = 5
-        lambda_cycle = 5
+        num_epochs = 50
+        lambda_cycle = 10
         learning_rate = 1e-5
         batch_size = 1
 
