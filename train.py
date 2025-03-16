@@ -82,6 +82,7 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
         scaler.update()
 
     print(f"Discriminator loss: {average_discriminator_loss}, Generator loss: {average_generator_loss}")
+    return average_discriminator_loss, average_generator_loss
 
 def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel):
     torch.save(discriminator_scenery.state_dict(), "discriminator_scenery.pth")
@@ -140,12 +141,29 @@ def train(train = True):
         dataset = PixelSceneryDataset("data/scenery", "data/pixel", transform=transform)
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         
+        best_discriminator_loss = float("inf")
+        best_generator_loss = float("inf")
+        not_improved_epochs = 0
+
         for epoch in range(num_epochs):
             print(f"Epoch {epoch + 1}/{num_epochs}")
-            train_one_epoch(discriminator_scenery, discriminator_pixel, 
+            average_discriminator_loss, average_generator_loss = train_one_epoch(discriminator_scenery, discriminator_pixel, 
                             generator_scenery, generator_pixel, dataloader,
                             optimizer_discriminator, optimizer_generator, 
                             lambda_cycle, mse_loss, l1_loss, scaler)
+            
+            if average_discriminator_loss < best_discriminator_loss and average_generator_loss < best_generator_loss:
+                best_discriminator_loss = average_discriminator_loss
+                best_generator_loss = average_generator_loss
+            elif average_discriminator_loss > best_discriminator_loss and average_generator_loss > best_generator_loss:
+                not_improved_epochs += 1
+            else:
+                not_improved_epochs = 0
+
+            if not_improved_epochs >= 3:
+                print("Early stopping")
+                break
+
             if epoch % 5 == 0:
                 # save the model
                 print("Saving the model")
