@@ -89,7 +89,7 @@ def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, ge
     torch.save(generator_scenery.state_dict(), "generator_scenery.pth")
     torch.save(generator_pixel.state_dict(), "generator_pixel.pth")
 
-def train(train = False):
+def train(train = True):
     if train:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
