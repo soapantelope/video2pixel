@@ -7,9 +7,6 @@ import torchvision.transforms as transforms
 import torchvision
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-import albumentations as albumentations
-from albumentations.pytorch import ToTensorV2
-
 
 from discriminator import Discriminator
 from generator import Generator
@@ -135,9 +132,9 @@ def train(train = True):
         optimizer_generator = optim.Adam(list(generator_scenery.parameters()) + list(generator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
 
         transform = transforms.Compose([
-            albumentations.Resize(250, 250),
-            albumentations.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], max_pixel_value=255),
-            ToTensorV2()
+            transforms.Resize((256, 256)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
 
         dataset = PixelSceneryDataset("data/scenery", "data/pixel", transform=transform)

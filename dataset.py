@@ -27,9 +27,7 @@ class PixelSceneryDataset(Dataset):
         scenery_img = Image.open(self.scenery_images[index]).convert("RGB")
 
         if self.transform:
-            augmented_pix = self.transform(image=pixel_img)
-            pixel_img = augmented_pix["image"]
-            augmented_scenery = self.transform(image=scenery_img)
-            scenery_img = augmented_scenery["image"]
+            pixel_img = self.transform(pixel_img)
+            scenery_img = self.transform(scenery_img)
 
         return scenery_img, pixel_img
