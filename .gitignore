@@ -1,4 +1,2 @@
 # ignore everything in data/pixel and data/scenery
-data/pixel/*
-data/scenery/*
-
+data/*
