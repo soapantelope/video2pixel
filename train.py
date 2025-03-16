@@ -119,6 +119,7 @@ def train():
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
     for epoch in range(num_epochs):
+        print(f"Epoch {epoch + 1}/{num_epochs}")
         train_one_epoch(discriminator_scenery, discriminator_pixel, 
                         generator_scenery, generator_pixel, dataloader,
                         optimizer_discriminator, optimizer_generator, 
