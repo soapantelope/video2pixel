@@ -10,38 +10,43 @@ from torch.utils.data import DataLoader
 
 from discriminator import Discriminator
 from generator import Generator
-
+from dataset import PixelSceneryDataset
 
 def train_one_epoch(discriminator_scenery, discriminator_pixel, 
                     generator_scenery, generator_pixel, dataloader, 
                     optimizer_discriminator, optimizer_generator,
-                    lambda_cycle):
+                    lambda_cycle, mse_loss, l1_loss):
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    for index, (scenery, pixel) in tqdm(dataloader):
+    average_discriminator_loss = 0
+    average_generator_loss = 0
+
+    for (scenery, pixel) in tqdm(dataloader):
         pixel = pixel.to(device)
         scenery = scenery.to(device)
 
         # train the discriminators
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast('cuda'):
             fake_scenery = generator_scenery(pixel)
             discriminator_scenery_real = discriminator_scenery(scenery)
             discriminator_scenery_fake = discriminator_scenery(fake_scenery.detach())
 
-            discriminator_scenery_loss_real = nn.MSELoss(discriminator_scenery_real, torch.ones_like(discriminator_scenery_real))
-            discriminator_scenery_loss_fake = nn.MSELoss(discriminator_scenery_fake, torch.zeros_like(discriminator_scenery_fake))
+            discriminator_scenery_loss_real = mse_loss(discriminator_scenery_real, torch.ones_like(discriminator_scenery_real))
+            discriminator_scenery_loss_fake = mse_loss(discriminator_scenery_fake, torch.zeros_like(discriminator_scenery_fake))
             discriminator_scenery_loss = (discriminator_scenery_loss_real + discriminator_scenery_loss_fake) / 2
             
             fake_pixel = generator_pixel(scenery)
             discriminator_pixel_real = discriminator_pixel(pixel)
             discriminator_pixel_fake = discriminator_pixel(fake_pixel.detach())
 
-            discriminator_pixel_loss_real = nn.MSELoss(discriminator_pixel_real, torch.ones_like(discriminator_pixel_real))
-            discriminator_pixel_loss_fake = nn.MSELoss(discriminator_pixel_fake, torch.zeros_like(discriminator_pixel_fake))
+            discriminator_pixel_loss_real = mse_loss(discriminator_pixel_real, torch.ones_like(discriminator_pixel_real))
+            discriminator_pixel_loss_fake = mse_loss(discriminator_pixel_fake, torch.zeros_like(discriminator_pixel_fake))
             discriminator_pixel_loss = (discriminator_pixel_loss_real + discriminator_pixel_loss_fake) / 2
 
             total_discriminator_loss = discriminator_scenery_loss + discriminator_pixel_loss
+
+            average_discriminator_loss += total_discriminator_loss.item() / len(dataloader)
 
         optimizer_discriminator.zero_grad()
         torch.cuda.amp.GradScaler().scale(total_discriminator_loss).backward()
@@ -49,12 +54,12 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
         torch.cuda.amp.GradScaler().update()
 
         # train the generators
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast('cuda'):
             discriminator_scenery_fake = discriminator_scenery(fake_scenery)
             discriminator_pixel_fake = discriminator_pixel(fake_pixel)
 
-            generator_loss_scenery = nn.MSELoss(discriminator_scenery_fake, torch.ones_like(discriminator_scenery_fake))
-            generator_loss_pixel = nn.MSELoss(discriminator_pixel_fake, torch.ones_like(discriminator_pixel_fake))
+            generator_loss_scenery = mse_loss(discriminator_scenery_fake, torch.ones_like(discriminator_scenery_fake))
+            generator_loss_pixel =  mse_loss(discriminator_pixel_fake, torch.ones_like(discriminator_pixel_fake))
 
             total_generator_loss = generator_loss_scenery + generator_loss_pixel
 
@@ -62,26 +67,39 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
             cycle_scenery = generator_scenery(fake_pixel)
             cycle_pixel = generator_pixel(fake_scenery)
 
-            cycle_loss_scenery = nn.L1Loss(cycle_scenery, scenery)
-            cycle_loss_pixel = nn.L1Loss(cycle_pixel, pixel)
+            cycle_loss_scenery = l1_loss(cycle_scenery, scenery)
+            cycle_loss_pixel = l1_loss(cycle_pixel, pixel)
 
             total_cycle_loss = cycle_loss_scenery + cycle_loss_pixel
 
             total_generator_loss = total_generator_loss + lambda_cycle * total_cycle_loss
+
+            average_generator_loss += total_generator_loss.item() / len(dataloader)
 
         optimizer_generator.zero_grad()
         torch.cuda.amp.GradScaler().scale(total_generator_loss).backward()
         torch.cuda.amp.GradScaler().step(optimizer_generator)
         torch.cuda.amp.GradScaler().update()
 
+    print(f"Discriminator loss: {average_discriminator_loss}, Generator loss: {average_generator_loss}")
+
+def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel):
+    torch.save(discriminator_scenery.state_dict(), "discriminator_scenery.pth")
+    torch.save(discriminator_pixel.state_dict(), "discriminator_pixel.pth")
+    torch.save(generator_scenery.state_dict(), "generator_scenery.pth")
+    torch.save(generator_pixel.state_dict(), "generator_pixel.pth")
+
 def train():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # hyperparameters
-    num_epochs = 50
-    lambda_cycle = 10
-    learning_rate = 2e-4
+    num_epochs = 30
+    lambda_cycle = 19
+    learning_rate = 1e-4
     batch_size = 1
+
+    mse_loss = nn.MSELoss()
+    l1_loss = nn.L1Loss()
 
     discriminator_scenery = Discriminator().to(device)
     discriminator_pixel = Discriminator().to(device)
@@ -92,18 +110,39 @@ def train():
     optimizer_generator = optim.Adam(list(generator_scenery.parameters()) + list(generator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
 
     transform = transforms.Compose([
-        transforms.Resize((64, 64)),
+        transforms.Resize((300, 300)),
         transforms.ToTensor(),
     ])
 
-    scenery_dataset = torchvision.datasets.ImageFolder(root="data/scenery", transform=transform)
-    pixel_dataset = torchvision.datasets.ImageFolder(root="data/pixel", transform=transform)
-
-    scenery_dataloader = DataLoader(scenery_dataset, batch_size=batch_size, shuffle=True)
-    pixel_dataloader = DataLoader(pixel_dataset, batch_size=batch_size, shuffle=True)
-
+    dataset = PixelSceneryDataset("data/scenery", "data/pixel", transform=transform)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    
     for epoch in range(num_epochs):
-        train_one_epoch(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel, scenery_dataloader, pixel_dataloader, optimizer_discriminator, optimizer_generator, lambda_cycle)
+        train_one_epoch(discriminator_scenery, discriminator_pixel, 
+                        generator_scenery, generator_pixel, dataloader,
+                        optimizer_discriminator, optimizer_generator, 
+                        lambda_cycle, mse_loss, l1_loss)
+        
+    # save the model
+    save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
+
+    validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
+
+    # pick 3 random images from the validation set and save the generated images
+    indices = torch.randint(0, len(validation_dataset), (3,))
+    for i in indices:
+        scenery, pixel = validation_dataset[i]
+        scenery = scenery.unsqueeze(0).to(device)
+        pixel = pixel.unsqueeze(0).to(device)
+
+        fake_scenery = generator_scenery(pixel)
+        fake_pixel = generator_pixel(scenery)
+
+        torchvision.utils.save_image(scenery, f"scenery_{i}.png")
+        torchvision.utils.save_image(pixel, f"pixel_{i}.png")
+        torchvision.utils.save_image(fake_scenery, f"fake_scenery_{i}.png")
+        torchvision.utils.save_image(fake_pixel, f"fake_pixel_{i}.png")
+    
 
 if __name__ == "__main__":
     train()
