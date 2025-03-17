@@ -84,11 +84,15 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
     print(f"Discriminator loss: {average_discriminator_loss}, Generator loss: {average_generator_loss}")
     return average_discriminator_loss, average_generator_loss
 
-def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel):
+def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel, optimizer_discriminator, optimizer_generator):
     torch.save(discriminator_scenery.state_dict(), "discriminator_scenery.pth")
     torch.save(discriminator_pixel.state_dict(), "discriminator_pixel.pth")
     torch.save(generator_scenery.state_dict(), "generator_scenery.pth")
     torch.save(generator_pixel.state_dict(), "generator_pixel.pth")
+
+    # save optimizers
+    torch.save(optimizer_discriminator.state_dict(), "optimizer_discriminator.pth")
+    torch.save(optimizer_generator.state_dict(), "optimizer_generator.pth")
 
 def denormalize(tensor, mean, std):
     """
@@ -137,9 +141,9 @@ def train():
 
     # hyperparameters
     num_epochs = 100
-    lambda_cycle = 10
-    learning_rate = 1e-5
-    batch_size = 1
+    lambda_cycle = 5
+    learning_rate = 2e-4
+    batch_size = 4
 
     mse_loss = nn.MSELoss()
     l1_loss = nn.L1Loss()
@@ -188,12 +192,12 @@ def train():
         if epoch % 2 == 0:
             # save the model
             print("Saving the model")
-            save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
+            save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel, optimizer_discriminator, optimizer_generator)
             # save some generated images
             validate(generator_scenery, generator_pixel, transform, epoch, 3)
                
     # save the model
-    save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel)
+    save_model(discriminator_scenery, discriminator_pixel, generator_scenery, generator_pixel, optimizer_discriminator, optimizer_generator)
 
     # load the model
     
