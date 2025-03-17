@@ -126,8 +126,8 @@ def validate(generator_scenery, generator_pixel, transform, epoch, num_images=3)
 
         scenery = denormalize(scenery, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         pixel = denormalize(pixel, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-        # fake_scenery = denormalize(fake_scenery, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-        # fake_pixel = denormalize(fake_pixel, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        fake_scenery = denormalize(fake_scenery, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        fake_pixel = denormalize(fake_pixel, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 
         torchvision.utils.save_image(scenery, f"epoch_{epoch}_scenery_{i}.png")
         torchvision.utils.save_image(pixel, f"epoch_{epoch}_pixel_{i}.png")
@@ -154,6 +154,18 @@ def train():
 
     optimizer_discriminator = optim.Adam(list(discriminator_scenery.parameters()) + list(discriminator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
     optimizer_generator = optim.Adam(list(generator_scenery.parameters()) + list(generator_pixel.parameters()), lr=learning_rate, betas=(0.5, 0.999))
+
+    # if you have saved models, load them here
+    if os.path.exists("discriminator_scenery.pth"):
+        discriminator_scenery.load_state_dict(torch.load("discriminator_scenery.pth"))
+        discriminator_pixel.load_state_dict(torch.load("discriminator_pixel.pth"))
+        generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
+        generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
+        optimizer_discriminator.load_state_dict(torch.load("optimizer_discriminator.pth"))
+        optimizer_generator.load_state_dict(torch.load("optimizer_generator.pth"))
+
+        for param_group in optimizer_discriminator.param_groups:
+            param_group['lr'] = learning_rate
 
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
