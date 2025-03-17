@@ -110,6 +110,7 @@ def denormalize(tensor, mean, std):
     return tensor
 
 def validate(generator_scenery, generator_pixel, transform, epoch, num_images=3):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
 
     # pick 3 random images from the validation set and save the generated images
@@ -139,7 +140,7 @@ def train():
     # hyperparameters
     num_epochs = 100
     lambda_cycle = 5
-    learning_rate = 2e-4
+    learning_rate = 1e-5
     batch_size = 4
 
     mse_loss = nn.MSELoss()
