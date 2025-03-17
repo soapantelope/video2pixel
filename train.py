@@ -7,6 +7,7 @@ import torchvision.transforms as transforms
 import torchvision
 from tqdm import tqdm
 from torch.utils.data import DataLoader
+import os
 
 from discriminator import Discriminator
 from generator import Generator
