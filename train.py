@@ -106,9 +106,8 @@ def denormalize(tensor, mean, std):
     Returns:
         torch.Tensor: Denormalized tensor of shape (C, H, W).
     """
-    mean = torch.tensor(mean).to(tensor.device).view(3, 1, 1)
-    std = torch.tensor(std).to(tensor.device).view(3, 1, 1)
-    tensor = tensor * std + mean
+    for t, m, s in zip(tensor, mean, std):
+        t.mul_(s).add_(m)
     return tensor
 
 def validate(generator_scenery, generator_pixel, transform, epoch, num_images=3):
@@ -222,7 +221,7 @@ if __name__ == "__main__":
     ])
 
     # load mdoels
-    generator_scenery.load_state_dict(torch.load("generator_scenery.pth"), strict=False)
-    generator_pixel.load_state_dict(torch.load("generator_pixel.pth"), strict=False)
+    generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
+    generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
 
     validate(generator_scenery, generator_pixel, transform, 1, 20)
