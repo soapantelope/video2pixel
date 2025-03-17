@@ -61,7 +61,7 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
             generator_loss_scenery = mse_loss(discriminator_scenery_fake, torch.ones_like(discriminator_scenery_fake))
             generator_loss_pixel =  mse_loss(discriminator_pixel_fake, torch.ones_like(discriminator_pixel_fake))
 
-            total_generator_loss = generator_loss_scenery + generator_loss_pixel
+            total_GAN_loss = generator_loss_scenery + generator_loss_pixel
 
             # cycle consistency loss
             cycle_scenery = generator_scenery(fake_pixel)
@@ -72,7 +72,7 @@ def train_one_epoch(discriminator_scenery, discriminator_pixel,
 
             total_cycle_loss = cycle_loss_scenery + cycle_loss_pixel
 
-            total_generator_loss = total_generator_loss + lambda_cycle * total_cycle_loss
+            total_generator_loss = total_GAN_loss + lambda_cycle * total_cycle_loss
 
             average_generator_loss += total_generator_loss.item() / len(dataloader)
 
@@ -97,21 +97,19 @@ def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, ge
 def denormalize(tensor, mean, std):
     """
     Denormalizes a tensor image.
-
     Args:
-        tensor (torch.Tensor): Normalized tensor of shape (C, H, W).
+        tensor (torch.Tensor): Normalized tensor of shape (N, C, H, W).
         mean (list): List of mean values for each channel.
         std (list): List of std values for each channel.
-
     Returns:
-        torch.Tensor: Denormalized tensor of shape (C, H, W).
+        torch.Tensor: Denormalized tensor of shape (N, C, H, W).
     """
-    for t, m, s in zip(tensor, mean, std):
-        t.mul_(s).add_(m)
+    mean = torch.tensor(mean).to(tensor.device).view(1, -1, 1, 1)
+    std = torch.tensor(std).to(tensor.device).view(1, -1, 1, 1)
+    tensor = tensor * std + mean
     return tensor
 
 def validate(generator_scenery, generator_pixel, transform, epoch, num_images=3):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     validation_dataset = PixelSceneryDataset("data/validation/scenery", "data/validation/pixel", transform=transform)
 
     # pick 3 random images from the validation set and save the generated images
@@ -127,8 +125,8 @@ def validate(generator_scenery, generator_pixel, transform, epoch, num_images=3)
 
         scenery = denormalize(scenery, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         pixel = denormalize(pixel, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-        fake_scenery = denormalize(fake_scenery, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-        fake_pixel = denormalize(fake_pixel, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        # fake_scenery = denormalize(fake_scenery, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        # fake_pixel = denormalize(fake_pixel, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 
         torchvision.utils.save_image(scenery, f"epoch_{epoch}_scenery_{i}.png")
         torchvision.utils.save_image(pixel, f"epoch_{epoch}_pixel_{i}.png")
@@ -208,20 +206,21 @@ def train():
     validate(generator_scenery, generator_pixel, transform, num_epochs, 10)
 
 if __name__ == "__main__":
-    # train()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    train()
+   
+    # device = "cuda" if torch.cuda.is_available() else torch.device("cpu")
 
-    generator_scenery = Generator().to(device)
-    generator_pixel = Generator().to(device)
+    # generator_scenery = Generator().to(device)
+    # generator_pixel = Generator().to(device)
 
-    transform = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-    ])
+    # transform = transforms.Compose([
+    #     transforms.Resize((256, 256)),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    # ])
 
-    # load mdoels
-    generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
-    generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
+    # # load models
+    # generator_scenery.load_state_dict(torch.load("generator_scenery.pth", map_location=device))
+    # generator_pixel.load_state_dict(torch.load("generator_pixel.pth", map_location=device))
 
-    validate(generator_scenery, generator_pixel, transform, 1, 20)
+    # validate(generator_scenery, generator_pixel, transform, 1, 5)
