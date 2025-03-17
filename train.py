@@ -140,8 +140,8 @@ def train():
     # hyperparameters
     num_epochs = 100
     lambda_cycle = 5
-    learning_rate = 2e-4
-    batch_size = 4
+    learning_rate = 1e-5
+    batch_size = 1
 
     mse_loss = nn.MSELoss()
     l1_loss = nn.L1Loss()
