@@ -209,4 +209,20 @@ def train():
     validate(generator_scenery, generator_pixel, transform, num_epochs, 10)
 
 if __name__ == "__main__":
-    train()
+    # train()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    generator_scenery = Generator().to(device)
+    generator_pixel = Generator().to(device)
+
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    ])
+
+    # load mdoels
+    generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
+    generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
+
+    validate(generator_scenery, generator_pixel, transform, 1, 20)
