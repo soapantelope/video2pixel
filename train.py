@@ -222,7 +222,7 @@ if __name__ == "__main__":
     ])
 
     # load mdoels
-    generator_scenery.load_state_dict(torch.load("generator_scenery.pth"))
-    generator_pixel.load_state_dict(torch.load("generator_pixel.pth"))
+    generator_scenery.load_state_dict(torch.load("generator_scenery.pth"), strict=False)
+    generator_pixel.load_state_dict(torch.load("generator_pixel.pth"), strict=False)
 
     validate(generator_scenery, generator_pixel, transform, 1, 20)
