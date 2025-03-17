@@ -19,13 +19,13 @@ class Discriminator(nn.Module):
     def __init__(self, in_channels=3, features=[64, 128, 256, 512]):
         super().__init__()
 
-        # Initial layer (no InstanceNorm)
+        # initial layer
         self.initial = nn.Sequential(
             nn.Conv2d(in_channels, features[0], kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
             nn.LeakyReLU(0.2, inplace=True),
         )
 
-        # Downsampling
+        # downsampling
         layers = []
         in_channels = features[0]
         for feature in features[1:]:
@@ -33,11 +33,11 @@ class Discriminator(nn.Module):
                 ConvBlock(in_channels, feature, stride=1 if feature == features[-1] else 2)
             )
             in_channels = feature
-            
-        # Final conv layer (PatchGAN output)
+
+        # patchgan output
         layers.append(nn.Conv2d(in_channels, 1, kernel_size=4, stride=1, padding=1, padding_mode="reflect"))
 
         self.model = nn.Sequential(*layers)
 
     def forward(self, x):
-        return torch.sigmoid(self.model(self.initial(x)))  # Patch-based output
+        return torch.sigmoid(self.model(self.initial(x))) 

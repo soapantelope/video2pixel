@@ -96,15 +96,6 @@ def save_model(discriminator_scenery, discriminator_pixel, generator_scenery, ge
     torch.save(optimizer_generator.state_dict(), "optimizer_generator.pth")
 
 def denormalize(tensor, mean, std):
-    """
-    Denormalizes a tensor image.
-    Args:
-        tensor (torch.Tensor): Normalized tensor of shape (N, C, H, W).
-        mean (list): List of mean values for each channel.
-        std (list): List of std values for each channel.
-    Returns:
-        torch.Tensor: Denormalized tensor of shape (N, C, H, W).
-    """
     mean = torch.tensor(mean).to(tensor.device).view(1, -1, 1, 1)
     std = torch.tensor(std).to(tensor.device).view(1, -1, 1, 1)
     tensor = tensor * std + mean
@@ -220,21 +211,21 @@ def train():
     validate(generator_scenery, generator_pixel, transform, num_epochs, 10)
 
 if __name__ == "__main__":
-    train()
+    # train()
    
-    # device = "cuda" if torch.cuda.is_available() else torch.device("cpu")
+    device = "cuda" if torch.cuda.is_available() else torch.device("cpu")
 
-    # generator_scenery = Generator().to(device)
-    # generator_pixel = Generator().to(device)
+    generator_scenery = Generator().to(device)
+    generator_pixel = Generator().to(device)
 
-    # transform = transforms.Compose([
-    #     transforms.Resize((256, 256)),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
-    # ])
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    ])
 
-    # # load models
-    # generator_scenery.load_state_dict(torch.load("generator_scenery.pth", map_location=device))
-    # generator_pixel.load_state_dict(torch.load("generator_pixel.pth", map_location=device))
+    # load models
+    generator_scenery.load_state_dict(torch.load("generator_scenery.pth", map_location=device))
+    generator_pixel.load_state_dict(torch.load("generator_pixel.pth", map_location=device))
 
-    # validate(generator_scenery, generator_pixel, transform, 1, 5)
+    validate(generator_scenery, generator_pixel, transform, 1, 20)
